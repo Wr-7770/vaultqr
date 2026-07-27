@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultQR | Professional QR Code Generator</title>
+<meta name="description" content="VaultQR - توليد رموز QR احترافية بواسطة Y796. سريع، آمن، وخاص بالكامل داخل متصفحك.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+  integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+></script>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --card:#141414;
+    --card-2:#1c1c1c;
+    --border:#2a2a2a;
+    --text:#ffffff;
+    --muted:#9a9a9a;
+    --accent-1:#f5a623;
+    --accent-2:#ff7a45;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:24px 16px 40px;
+  }
+  .app{
+    width:100%;
+    max-width:420px;
+  }
+  .top-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:28px;
+  }
+  .lang-pill{
+    background:var(--card-2);
+    color:var(--muted);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 18px;
+    font-size:14px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .lang-pill:hover{ color:var(--text); }
+  h1{
+    text-align:center;
+    font-size:40px;
+    font-weight:800;
+    margin:0 0 10px;
+    letter-spacing:0.5px;
+  }
+  .subtitle{
+    text-align:center;
+    color:var(--muted);
+    font-size:15px;
+    margin:0 0 28px;
+  }
+  .tabs{
+    display:flex;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:6px;
+    margin-bottom:20px;
+    gap:6px;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:14px 0;
+    border-radius:12px;
+    color:var(--muted);
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    user-select:none;
+  }
+  .tab.active{
+    background:var(--card);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+
+  .input-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:20px;
+  }
+  .input-card input{
+    width:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-size:17px;
+    font-family:inherit;
+    direction:auto;
+  }
+  .input-card input::placeholder{ color:#5a5a5a; }
+
+  .qr-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:28px;
+    margin-bottom:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    min-height:220px;
+    justify-content:center;
+  }
+  #qrcode{
+    background:#fff;
+    padding:14px;
+    border-radius:12px;
+    line-height:0;
+  }
+  #qrcode img, #qrcode canvas{
+    display:block;
+    border-radius:4px;
+  }
+  .qr-placeholder{
+    color:#4a4a4a;
+    font-size:14px;
+    text-align:center;
+  }
+
+  /* YouTube-style loading spinner: a ring with one bright arc that spins, then fades out */
+  .spinner{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    border:3px solid var(--border);
+    border-top-color:#fff;
+    animation:spin .7s linear infinite;
+    display:none;
+  }
+  .spinner.show{ display:block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .qr-actions{
+    display:flex;
+    gap:10px;
+  }
+  .icon-btn{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--muted);
+    border-radius:10px;
+    padding:9px 14px;
+    font-size:13px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .icon-btn:hover{ color:var(--text); border-color:#3a3a3a; }
+
+  .size-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .size-row span:first-child{ color:var(--text); font-weight:600; }
+  /* YouTube-scrubber style: just a thin line by default; the round handle
+     only appears while you're actually touching/hovering/dragging it, then
+     fades back out — same colors as before, just the interaction changed. */
+  input[type="range"]{
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    appearance:none;
+    width:100%;
+    height:24px;
+    background:transparent;
+    margin:0 0 22px;
+  }
+  input[type="range"]::-webkit-slider-runnable-track{
+    height:3px;
+    background:var(--border);
+    border-radius:999px;
+  }
+  input[type="range"]::-moz-range-track{
+    height:3px;
+    background:var(--border);
+    border-radius:999px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:#fff;
+    margin-top:-6.5px;
+    cursor:pointer;
+    opacity:0;
+    transform:scale(0.5);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:16px;
+    height:16px;
+    border:none;
+    border-radius:50%;
+    background:#fff;
+    cursor:pointer;
+    opacity:0;
+    transform:scale(0.5);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  input[type="range"]:hover::-webkit-slider-thumb,
+  input[type="range"]:active::-webkit-slider-thumb,
+  input[type="range"]:focus::-webkit-slider-thumb{
+    opacity:1;
+    transform:scale(1);
+  }
+  input[type="range"]:hover::-moz-range-thumb,
+  input[type="range"]:active::-moz-range-thumb,
+  input[type="range"]:focus::-moz-range-thumb{
+    opacity:1;
+    transform:scale(1);
+  }
+
+  .options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:22px;
+  }
+  .option{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:500;
+  }
+  .option input{ display:none; }
+  .checkbox{
+    width:20px;
+    height:20px;
+    border-radius:6px;
+    border:1.5px solid #4a4a4a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    background:transparent;
+  }
+  .option input:checked + .checkbox{
+    background:#fff;
+    border-color:#fff;
+    color:#000;
+  }
+  .option input:checked + .checkbox::after{
+    content:"✓";
+    color:#000;
+    font-size:13px;
+    font-weight:700;
+  }
+
+  .primary-btn{
+    width:100%;
+    background:#fff;
+    color:#000;
+    border:none;
+    border-radius:14px;
+    padding:18px 0;
+    font-size:17px;
+    font-weight:700;
+    cursor:pointer;
+    margin-bottom:30px;
+  }
+  .primary-btn:active{ transform:scale(0.99); }
+  .primary-btn:disabled{ opacity:0.6; }
+
+  hr{
+    border:none;
+    border-top:1px solid var(--border);
+    margin:0 0 24px;
+  }
+
+  .footer-icons{
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    margin-bottom:14px;
+  }
+  .footer-icons a{
+    color:var(--muted);
+    display:flex;
+  }
+  .footer-icons a:hover{ color:var(--text); }
+  .footer-icons svg{ width:20px; height:20px; }
+
+  .made-by{
+    text-align:center;
+    color:#5a5a5a;
+    font-size:12px;
+    letter-spacing:2px;
+    font-weight:600;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:28px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:#fff;
+    color:#000;
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    white-space:nowrap;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-row">
+    <div class="lang-pill" id="langToggle">English</div>
+  </div>
+
+  <h1>VaultQR</h1>
+  <p class="subtitle" id="subtitle">توليد رموز QR بمعايير احترافية</p>
+
+  <div class="tabs">
+    <div class="tab active" data-mode="text" id="tabText">نص</div>
+    <div class="tab" data-mode="url" id="tabUrl">رابط</div>
+  </div>
+
+  <div class="input-card">
+    <input type="text" id="dataInput" placeholder="اكتب النص أو الرابط هنا" />
+  </div>
+
+  <div class="qr-card">
+    <div class="spinner" id="spinner"></div>
+    <div id="qrcode"><span class="qr-placeholder" id="qrPlaceholder">سيظهر رمز QR هنا</span></div>
+    <div class="qr-actions" id="qrActions" style="display:none;">
+      <div class="icon-btn" id="downloadBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+        <span id="downloadLabel">تحميل</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="size-row">
+    <span id="sizeLabel">256</span>
+    <span id="sizeCaption">حجم الرمز</span>
+  </div>
+  <input type="range" id="sizeRange" min="128" max="512" step="16" value="256">
+
+  <div class="options">
+    <label class="option">
+      <span id="optTransparentLabel">خلفية شفافة</span>
+      <input type="checkbox" id="optTransparent">
+      <span class="checkbox"></span>
+    </label>
+    <label class="option">
+      <span id="optHighECLabel">تصحيح أخطاء عالي</span>
+      <input type="checkbox" id="optHighEC" checked>
+      <span class="checkbox"></span>
+    </label>
+    <label class="option">
+      <span id="optQuietZoneLabel">إطار هامش</span>
+      <input type="checkbox" id="optQuietZone" checked>
+      <span class="checkbox"></span>
+    </label>
+    <label class="option">
+      <span id="optDarkLabel">ألوان داكنة</span>
+      <input type="checkbox" id="optDark">
+      <span class="checkbox"></span>
+    </label>
+  </div>
+
+  <button class="primary-btn" id="generateBtn">توليد رمز QR</button>
+
+  <hr>
+
+  <div class="footer-icons">
+    <a href="mailto:2800.XGB@proton.me" aria-label="Email">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 6l10 7L22 6"/></svg>
+    </a>
+  </div>
+  <p class="made-by">MADE BY Y796</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const dataInput = document.getElementById('dataInput');
+const sizeRange = document.getElementById('sizeRange');
+const sizeLabel = document.getElementById('sizeLabel');
+const generateBtn = document.getElementById('generateBtn');
+const qrDiv = document.getElementById('qrcode');
+const qrPlaceholder = document.getElementById('qrPlaceholder');
+const qrActions = document.getElementById('qrActions');
+const downloadBtn = document.getElementById('downloadBtn');
+const toast = document.getElementById('toast');
+const tabText = document.getElementById('tabText');
+const tabUrl = document.getElementById('tabUrl');
+const spinner = document.getElementById('spinner');
+const langToggle = document.getElementById('langToggle');
+const htmlRoot = document.getElementById('htmlRoot');
+
+let qr = null;
+let currentLang = 'ar';
+let currentMode = 'text';
+
+const dict = {
+  ar: {
+    subtitle: 'توليد رموز QR بمعايير احترافية',
+    tabText: 'نص',
+    tabUrl: 'رابط',
+    placeholderText: 'اكتب النص أو الرابط هنا',
+    placeholderUrl: 'https://example.com',
+    qrPlaceholder: 'سيظهر رمز QR هنا',
+    download: 'تحميل',
+    sizeCaption: 'حجم الرمز',
+    optTransparent: 'خلفية شفافة',
+    optHighEC: 'تصحيح أخطاء عالي',
+    optQuietZone: 'إطار هامش',
+    optDark: 'ألوان داكنة',
+    generate: 'توليد رمز QR',
+    generating: 'جاري التوليد...',
+    langPill: 'English',
+    toastEmpty: 'اكتب نص أو رابط أولاً',
+    toastDone: 'تم التوليد بنجاح',
+    toastDownload: 'تم التحميل',
+    toastNoQr: 'ولّد رمز QR أولاً'
+  },
+  en: {
+    subtitle: 'Generate professional-grade QR codes',
+    tabText: 'Text',
+    tabUrl: 'URL',
+    placeholderText: 'Type your text or link here',
+    placeholderUrl: 'https://example.com',
+    qrPlaceholder: 'Your QR code will appear here',
+    download: 'Download',
+    sizeCaption: 'Code size',
+    optTransparent: 'Transparent background',
+    optHighEC: 'High error correction',
+    optQuietZone: 'Quiet zone border',
+    optDark: 'Dark colors',
+    generate: 'Generate QR code',
+    generating: 'Generating...',
+    langPill: 'العربية',
+    toastEmpty: 'Type some text or a link first',
+    toastDone: 'Generated successfully',
+    toastDownload: 'Downloaded',
+    toastNoQr: 'Generate a QR code first'
+  }
+};
+
+function applyLang(){
+  const t = dict[currentLang];
+  document.getElementById('subtitle').textContent = t.subtitle;
+  tabText.textContent = t.tabText;
+  tabUrl.textContent = t.tabUrl;
+  dataInput.placeholder = currentMode === 'url' ? t.placeholderUrl : t.placeholderText;
+  if(qrPlaceholder && qrPlaceholder.isConnected){ qrPlaceholder.textContent = t.qrPlaceholder; }
+  document.getElementById('downloadLabel').textContent = t.download;
+  document.getElementById('sizeCaption').textContent = t.sizeCaption;
+  document.getElementById('optTransparentLabel').textContent = t.optTransparent;
+  document.getElementById('optHighECLabel').textContent = t.optHighEC;
+  document.getElementById('optQuietZoneLabel').textContent = t.optQuietZone;
+  document.getElementById('optDarkLabel').textContent = t.optDark;
+  generateBtn.textContent = t.generate;
+  langToggle.textContent = t.langPill;
+
+  htmlRoot.setAttribute('lang', currentLang);
+  htmlRoot.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+}
+
+langToggle.addEventListener('click', () => {
+  currentLang = currentLang === 'ar' ? 'en' : 'ar';
+  applyLang();
+});
+
+sizeRange.addEventListener('input', () => {
+  sizeLabel.textContent = sizeRange.value;
+});
+
+tabText.addEventListener('click', () => setTab('text'));
+tabUrl.addEventListener('click', () => setTab('url'));
+
+function setTab(mode){
+  currentMode = mode;
+  tabText.classList.toggle('active', mode === 'text');
+  tabUrl.classList.toggle('active', mode === 'url');
+  dataInput.placeholder = mode === 'url' ? dict[currentLang].placeholderUrl : dict[currentLang].placeholderText;
+}
+
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function generateQR(){
+  const value = dataInput.value.trim();
+  const t = dict[currentLang];
+  if(!value){
+    showToast(t.toastEmpty);
+    return;
+  }
+
+  generateBtn.disabled = true;
+  generateBtn.textContent = t.generating;
+
+  // Youtube-style spinner: show the ring while "generating", then it disappears
+  qrDiv.innerHTML = '';
+  qrActions.style.display = 'none';
+  spinner.classList.add('show');
+
+  setTimeout(() => {
+    const size = parseInt(sizeRange.value, 10);
+    const highEC = document.getElementById('optHighEC').checked;
+    const dark = document.getElementById('optDark').checked;
+    const transparent = document.getElementById('optTransparent').checked;
+    const quietZone = document.getElementById('optQuietZone').checked;
+
+    qrDiv.innerHTML = '';
+    qrDiv.style.padding = quietZone ? '14px' : '0px';
+    qrDiv.style.background = transparent ? 'transparent' : '#fff';
+
+    qr = new QRCode(qrDiv, {
+      text: value,
+      width: size,
+      height: size,
+      colorDark: dark ? '#1a1a1a' : '#000000',
+      colorLight: transparent ? 'rgba(0,0,0,0)' : '#ffffff',
+      correctLevel: highEC ? QRCode.CorrectLevel.H : QRCode.CorrectLevel.M
+    });
+
+    spinner.classList.remove('show');
+    qrActions.style.display = 'flex';
+    generateBtn.disabled = false;
+    generateBtn.textContent = t.generate;
+    showToast(t.toastDone);
+  }, 550);
+}
+
+downloadBtn.addEventListener('click', () => {
+  const t = dict[currentLang];
+  // Prefer the canvas qrcodejs draws to (synchronous, always has the final image
+  // immediately). The <img> it also creates is populated from a delayed
+  // canvas.toDataURL() call on some browsers, so it can briefly be empty.
+  const canvas = qrDiv.querySelector('canvas');
+  const img = qrDiv.querySelector('img');
+
+  let dataUrl = null;
+  if(canvas){
+    dataUrl = canvas.toDataURL('image/png');
+  } else if(img && img.src && img.src.startsWith('data:')){
+    dataUrl = img.src;
+  }
+
+  if(!dataUrl){
+    showToast(t.toastNoQr);
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.download = 'vaultqr.png';
+  link.href = dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  showToast(t.toastDownload);
+});
+
+generateBtn.addEventListener('click', generateQR);
+dataInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') generateQR(); });
+</script>
+</body>
+</html>
