@@ -376,12 +376,6 @@
     </div>
   </div>
 
-  <div class="size-row">
-    <span id="sizeLabel">256</span>
-    <span id="sizeCaption">حجم الرمز</span>
-  </div>
-  <input type="range" id="sizeRange" min="128" max="512" step="16" value="256">
-
   <div class="options">
     <label class="option">
       <span id="optTransparentLabel">خلفية شفافة</span>
@@ -420,9 +414,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
+const QR_SIZE = 512; // one fixed, clear size for every generated/downloaded code
 const dataInput = document.getElementById('dataInput');
-const sizeRange = document.getElementById('sizeRange');
-const sizeLabel = document.getElementById('sizeLabel');
 const generateBtn = document.getElementById('generateBtn');
 const qrDiv = document.getElementById('qrcode');
 const qrPlaceholder = document.getElementById('qrPlaceholder');
@@ -448,7 +441,6 @@ const dict = {
     placeholderUrl: 'https://example.com',
     qrPlaceholder: 'سيظهر رمز QR هنا',
     download: 'تحميل',
-    sizeCaption: 'حجم الرمز',
     optTransparent: 'خلفية شفافة',
     optHighEC: 'تصحيح أخطاء عالي',
     optQuietZone: 'إطار هامش',
@@ -469,7 +461,6 @@ const dict = {
     placeholderUrl: 'https://example.com',
     qrPlaceholder: 'Your QR code will appear here',
     download: 'Download',
-    sizeCaption: 'Code size',
     optTransparent: 'Transparent background',
     optHighEC: 'High error correction',
     optQuietZone: 'Quiet zone border',
@@ -492,7 +483,6 @@ function applyLang(){
   dataInput.placeholder = currentMode === 'url' ? t.placeholderUrl : t.placeholderText;
   if(qrPlaceholder && qrPlaceholder.isConnected){ qrPlaceholder.textContent = t.qrPlaceholder; }
   document.getElementById('downloadLabel').textContent = t.download;
-  document.getElementById('sizeCaption').textContent = t.sizeCaption;
   document.getElementById('optTransparentLabel').textContent = t.optTransparent;
   document.getElementById('optHighECLabel').textContent = t.optHighEC;
   document.getElementById('optQuietZoneLabel').textContent = t.optQuietZone;
@@ -507,10 +497,6 @@ function applyLang(){
 langToggle.addEventListener('click', () => {
   currentLang = currentLang === 'ar' ? 'en' : 'ar';
   applyLang();
-});
-
-sizeRange.addEventListener('input', () => {
-  sizeLabel.textContent = sizeRange.value;
 });
 
 tabText.addEventListener('click', () => setTab('text'));
@@ -546,7 +532,6 @@ function generateQR(){
   spinner.classList.add('show');
 
   setTimeout(() => {
-    const size = parseInt(sizeRange.value, 10);
     const highEC = document.getElementById('optHighEC').checked;
     const dark = document.getElementById('optDark').checked;
     const transparent = document.getElementById('optTransparent').checked;
@@ -558,8 +543,8 @@ function generateQR(){
 
     qr = new QRCode(qrDiv, {
       text: value,
-      width: size,
-      height: size,
+      width: QR_SIZE,
+      height: QR_SIZE,
       colorDark: dark ? '#1a1a1a' : '#000000',
       colorLight: transparent ? 'rgba(0,0,0,0)' : '#ffffff',
       correctLevel: highEC ? QRCode.CorrectLevel.H : QRCode.CorrectLevel.M
@@ -575,18 +560,11 @@ function generateQR(){
 
 downloadBtn.addEventListener('click', () => {
   const t = dict[currentLang];
-  // Prefer the canvas qrcodejs draws to (synchronous, always has the final image
-  // immediately). The <img> it also creates is populated from a delayed
-  // canvas.toDataURL() call on some browsers, so it can briefly be empty.
-  const canvas = qrDiv.querySelector('canvas');
-  const img = qrDiv.querySelector('img');
 
-  let dataUrl = null;
-  if(canvas){
-    dataUrl = canvas.toDataURL('image/png');
-  } else if(img && img.src && img.src.startsWith('data:')){
-    dataUrl = img.src;
-  }
+  // Every code is generated at the same fixed QR_SIZE, so what's on screen
+  // is already the exact file everyone gets — no separate resize step needed.
+  const canvas = qrDiv.querySelector('canvas');
+  const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
 
   if(!dataUrl){
     showToast(t.toastNoQr);
