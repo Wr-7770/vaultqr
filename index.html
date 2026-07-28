@@ -414,7 +414,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const QR_SIZE = 512; // one fixed, clear size for every generated/downloaded code
+const QR_SIZE = 300; // one fixed, clear size for every generated/downloaded code
 const dataInput = document.getElementById('dataInput');
 const generateBtn = document.getElementById('generateBtn');
 const qrDiv = document.getElementById('qrcode');
@@ -560,16 +560,31 @@ function generateQR(){
 
 downloadBtn.addEventListener('click', () => {
   const t = dict[currentLang];
+  const transparent = document.getElementById('optTransparent').checked;
 
-  // Every code is generated at the same fixed QR_SIZE, so what's on screen
-  // is already the exact file everyone gets — no separate resize step needed.
-  const canvas = qrDiv.querySelector('canvas');
-  const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
-
-  if(!dataUrl){
+  const source = qrDiv.querySelector('canvas');
+  if(!source){
     showToast(t.toastNoQr);
     return;
   }
+
+  // The canvas qrcodejs draws has NO quiet zone (white margin) baked in —
+  // CSS padding around it only affects what's shown on screen, not the
+  // exported pixels. Real QR readers require a margin of at least ~4
+  // modules around the code or they refuse to lock onto it, so we build a
+  // bigger canvas with that margin baked in and export that instead.
+  const QUIET = Math.round(QR_SIZE * 0.2); // keeps the same safety margin ratio as before
+  const out = document.createElement('canvas');
+  out.width = source.width + QUIET * 2;
+  out.height = source.height + QUIET * 2;
+  const ctx = out.getContext('2d');
+  if(!transparent){
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, out.width, out.height);
+  }
+  ctx.drawImage(source, QUIET, QUIET);
+
+  const dataUrl = out.toDataURL('image/png');
 
   const link = document.createElement('a');
   link.download = 'vaultqr.png';
