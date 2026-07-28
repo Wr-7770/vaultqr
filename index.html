@@ -6,13 +6,14 @@
 <title>VaultQR | Professional QR Code Generator</title>
 <meta name="description" content="VaultQR - توليد رموز QR احترافية بواسطة Y796. سريع، آمن، وخاص بالكامل داخل متصفحك.">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
 <script
   src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
   integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
   crossorigin="anonymous"
   referrerpolicy="no-referrer"
 ></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#0a0a0a;
@@ -143,7 +144,6 @@
     text-align:center;
   }
 
-  /* YouTube-style loading spinner: a ring with one bright arc that spins, then fades out */
   .spinner{
     width:42px;
     height:42px;
@@ -183,9 +183,6 @@
     font-size:14px;
   }
   .size-row span:first-child{ color:var(--text); font-weight:600; }
-  /* YouTube-scrubber style: just a thin line by default; the round handle
-     only appears while you're actually touching/hovering/dragging it, then
-     fades back out — same colors as before, just the interaction changed. */
   input[type="range"]{
     -webkit-appearance:none;
     -moz-appearance:none;
@@ -345,6 +342,113 @@
     opacity:1;
     transform:translateX(-50%) translateY(0);
   }
+
+  .auth-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .auth-tabs{
+    display:flex;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:6px;
+    gap:6px;
+  }
+  .auth-field{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+  }
+  .auth-field input{
+    width:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-size:16px;
+    font-family:inherit;
+    direction:ltr;
+    text-align:right;
+  }
+  .auth-field input::placeholder{ color:#5a5a5a; }
+  .auth-error{
+    color:#ff6b6b;
+    font-size:13px;
+    text-align:center;
+    min-height:18px;
+  }
+  .account-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:20px;
+    font-size:13px;
+  }
+  .account-row .email{
+    color:var(--muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:200px;
+  }
+  .account-row .logout{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--muted);
+    border-radius:10px;
+    padding:8px 14px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .account-row .logout:hover{ color:var(--text); }
+
+  .history-section{ margin-bottom:20px; }
+  .history-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    gap:10px;
+  }
+  .history-item .h-text{
+    flex:1;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:13px;
+  }
+  .history-item .h-date{
+    color:var(--muted);
+    font-size:11px;
+  }
+  .history-item .h-del{
+    background:none;
+    border:none;
+    color:var(--muted);
+    cursor:pointer;
+    font-size:16px;
+    padding:2px 6px;
+  }
+  .history-item .h-del:hover{ color:#ff6b6b; }
+  .history-empty{
+    color:#4a4a4a;
+    font-size:13px;
+    text-align:center;
+    padding:10px 0;
+  }
+  .hidden{ display:none !important; }
 </style>
 </head>
 <body>
@@ -356,50 +460,77 @@
   <h1>VaultQR</h1>
   <p class="subtitle" id="subtitle">توليد رموز QR بمعايير احترافية</p>
 
-  <div class="tabs">
-    <div class="tab active" data-mode="text" id="tabText">نص</div>
-    <div class="tab" data-mode="url" id="tabUrl">رابط</div>
+  <div id="authScreen" class="auth-wrap">
+    <div class="auth-tabs">
+      <div class="tab active" id="authTabLogin">تسجيل الدخول</div>
+      <div class="tab" id="authTabSignup">حساب جديد</div>
+    </div>
+    <div class="auth-field">
+      <input type="email" id="authEmail" placeholder="الإيميل" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <input type="password" id="authPassword" placeholder="كلمة المرور" autocomplete="current-password">
+    </div>
+    <p class="auth-error" id="authError"></p>
+    <button class="primary-btn" id="authSubmitBtn" style="margin-bottom:0;">دخول</button>
   </div>
 
-  <div class="input-card">
-    <input type="text" id="dataInput" placeholder="اكتب النص أو الرابط هنا" />
-  </div>
+  <div id="appScreen" class="hidden">
+    <div class="account-row">
+      <span class="email" id="accountEmail"></span>
+      <button class="logout" id="logoutBtn">تسجيل خروج</button>
+    </div>
 
-  <div class="qr-card">
-    <div class="spinner" id="spinner"></div>
-    <div id="qrcode"><span class="qr-placeholder" id="qrPlaceholder">سيظهر رمز QR هنا</span></div>
-    <div class="qr-actions" id="qrActions" style="display:none;">
-      <div class="icon-btn" id="downloadBtn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
-        <span id="downloadLabel">تحميل</span>
+    <div class="tabs">
+      <div class="tab active" data-mode="text" id="tabText">نص</div>
+      <div class="tab" data-mode="url" id="tabUrl">رابط</div>
+    </div>
+
+    <div class="input-card">
+      <input type="text" id="dataInput" placeholder="اكتب النص أو الرابط هنا" />
+    </div>
+
+    <div class="qr-card">
+      <div class="spinner" id="spinner"></div>
+      <div id="qrcode"><span class="qr-placeholder" id="qrPlaceholder">سيظهر رمز QR هنا</span></div>
+      <div class="qr-actions" id="qrActions" style="display:none;">
+        <div class="icon-btn" id="downloadBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+          <span id="downloadLabel">تحميل</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="options">
-    <label class="option">
-      <span id="optTransparentLabel">خلفية شفافة</span>
-      <input type="checkbox" id="optTransparent">
-      <span class="checkbox"></span>
-    </label>
-    <label class="option">
-      <span id="optHighECLabel">تصحيح أخطاء عالي</span>
-      <input type="checkbox" id="optHighEC" checked>
-      <span class="checkbox"></span>
-    </label>
-    <label class="option">
-      <span id="optQuietZoneLabel">إطار هامش</span>
-      <input type="checkbox" id="optQuietZone" checked>
-      <span class="checkbox"></span>
-    </label>
-    <label class="option">
-      <span id="optDarkLabel">ألوان داكنة</span>
-      <input type="checkbox" id="optDark">
-      <span class="checkbox"></span>
-    </label>
-  </div>
+    <div class="options">
+      <label class="option">
+        <span id="optTransparentLabel">خلفية شفافة</span>
+        <input type="checkbox" id="optTransparent">
+        <span class="checkbox"></span>
+      </label>
+      <label class="option">
+        <span id="optHighECLabel">تصحيح أخطاء عالي</span>
+        <input type="checkbox" id="optHighEC" checked>
+        <span class="checkbox"></span>
+      </label>
+      <label class="option">
+        <span id="optQuietZoneLabel">إطار هامش</span>
+        <input type="checkbox" id="optQuietZone" checked>
+        <span class="checkbox"></span>
+      </label>
+      <label class="option">
+        <span id="optDarkLabel">ألوان داكنة</span>
+        <input type="checkbox" id="optDark">
+        <span class="checkbox"></span>
+      </label>
+    </div>
 
-  <button class="primary-btn" id="generateBtn">توليد رمز QR</button>
+    <button class="primary-btn" id="generateBtn">توليد رمز QR</button>
+
+    <p class="section-label" id="historyLabel" style="color:var(--muted); font-size:13px; font-weight:600; margin:0 0 12px 4px;">سجل الرموز</p>
+    <div class="history-section" id="historyList">
+      <p class="history-empty" id="historyEmpty">ما فيه رموز محفوظة بعد</p>
+    </div>
+  </div>
 
   <hr>
 
@@ -414,7 +545,170 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const QR_SIZE = 300; // one fixed, clear size for every generated/downloaded code
+const SUPABASE_URL = 'sb_publishable_RdvZrhNQN2sfBlRP6mRobQ_DqCZtOgi';
+const SUPABASE_ANON_KEY = 'oimzrnwlegavmysorhlu';
+
+const SUPABASE_CONFIGURED =
+  SUPABASE_URL !== 'PASTE_YOUR_SUPABASE_PROJECT_URL_HERE' &&
+  SUPABASE_ANON_KEY !== 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE' &&
+  SUPABASE_URL.startsWith('http');
+
+let sb = null;
+if(SUPABASE_CONFIGURED){
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e){
+    console.error('Supabase init failed:', e);
+    sb = null;
+  }
+}
+
+const authScreen = document.getElementById('authScreen');
+const appScreen = document.getElementById('appScreen');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authError = document.getElementById('authError');
+const authSubmitBtn = document.getElementById('authSubmitBtn');
+const authTabLogin = document.getElementById('authTabLogin');
+const authTabSignup = document.getElementById('authTabSignup');
+const accountEmail = document.getElementById('accountEmail');
+const logoutBtn = document.getElementById('logoutBtn');
+const historyList = document.getElementById('historyList');
+const historyEmpty = document.getElementById('historyEmpty');
+
+let authMode = 'login';
+
+if(!sb){
+  authScreen.innerHTML = '<p class="auth-error" style="color:var(--muted);">' +
+    'الموقع لسا ما تربط بحساب Supabase. لازم تحط SUPABASE_URL و SUPABASE_ANON_KEY ' +
+    'الصحيحين بأول السكربت.</p>';
+} else {
+  authTabLogin.addEventListener('click', () => setAuthMode('login'));
+  authTabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+  authSubmitBtn.addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    authError.textContent = '';
+
+    if(!email || !password){
+      authError.textContent = 'عبّي الإيميل وكلمة المرور';
+      return;
+    }
+
+    authSubmitBtn.disabled = true;
+    const original = authSubmitBtn.textContent;
+    authSubmitBtn.textContent = '...';
+
+    let result;
+    if(authMode === 'login'){
+      result = await sb.auth.signInWithPassword({ email, password });
+    } else {
+      result = await sb.auth.signUp({ email, password });
+    }
+
+    authSubmitBtn.disabled = false;
+    authSubmitBtn.textContent = original;
+
+    if(result.error){
+      authError.textContent = result.error.message;
+      return;
+    }
+
+    if(authMode === 'signup' && !result.data.session){
+      authError.textContent = 'تحقق من إيميلك لتأكيد الحساب، وبعدها سجّل دخول.';
+      setAuthMode('login');
+    }
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await sb.auth.signOut();
+  });
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if(session){
+      authScreen.classList.add('hidden');
+      appScreen.classList.remove('hidden');
+      accountEmail.textContent = session.user.email;
+      loadHistory();
+    } else {
+      authScreen.classList.remove('hidden');
+      appScreen.classList.add('hidden');
+    }
+  });
+}
+
+function setAuthMode(mode){
+  authMode = mode;
+  authTabLogin.classList.toggle('active', mode === 'login');
+  authTabSignup.classList.toggle('active', mode === 'signup');
+  authSubmitBtn.textContent = mode === 'login' ? 'دخول' : 'إنشاء حساب';
+  authError.textContent = '';
+}
+
+async function loadHistory(){
+  if(!sb) return;
+  const { data, error } = await sb
+    .from('qr_history')
+    .select('id, content, created_at')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  historyList.innerHTML = '';
+
+  if(error || !data || data.length === 0){
+    historyList.appendChild(historyEmpty);
+    return;
+  }
+
+  data.forEach(row => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const textWrap = document.createElement('div');
+    textWrap.style.minWidth = '0';
+    textWrap.style.flex = '1';
+
+    const text = document.createElement('div');
+    text.className = 'h-text';
+    text.textContent = row.content;
+    text.style.cursor = 'pointer';
+    text.title = 'اضغط لإعادة استخدامه';
+    text.addEventListener('click', () => {
+      dataInput.value = row.content;
+      generateQR();
+    });
+
+    const date = document.createElement('div');
+    date.className = 'h-date';
+    date.textContent = new Date(row.created_at).toLocaleString('ar');
+
+    textWrap.appendChild(text);
+    textWrap.appendChild(date);
+
+    const del = document.createElement('button');
+    del.className = 'h-del';
+    del.textContent = '✕';
+    del.addEventListener('click', async () => {
+      await sb.from('qr_history').delete().eq('id', row.id);
+      loadHistory();
+    });
+
+    item.appendChild(textWrap);
+    item.appendChild(del);
+    historyList.appendChild(item);
+  });
+}
+
+async function saveToHistory(content){
+  if(!sb) return;
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user) return;
+  await sb.from('qr_history').insert({ user_id: user.id, content });
+  loadHistory();
+}
+
+const QR_SIZE = 300;
 const dataInput = document.getElementById('dataInput');
 const generateBtn = document.getElementById('generateBtn');
 const qrDiv = document.getElementById('qrcode');
@@ -526,7 +820,6 @@ function generateQR(){
   generateBtn.disabled = true;
   generateBtn.textContent = t.generating;
 
-  // Youtube-style spinner: show the ring while "generating", then it disappears
   qrDiv.innerHTML = '';
   qrActions.style.display = 'none';
   spinner.classList.add('show');
@@ -555,6 +848,7 @@ function generateQR(){
     generateBtn.disabled = false;
     generateBtn.textContent = t.generate;
     showToast(t.toastDone);
+    saveToHistory(value);
   }, 550);
 }
 
@@ -568,12 +862,7 @@ downloadBtn.addEventListener('click', () => {
     return;
   }
 
-  // The canvas qrcodejs draws has NO quiet zone (white margin) baked in —
-  // CSS padding around it only affects what's shown on screen, not the
-  // exported pixels. Real QR readers require a margin of at least ~4
-  // modules around the code or they refuse to lock onto it, so we build a
-  // bigger canvas with that margin baked in and export that instead.
-  const QUIET = Math.round(QR_SIZE * 0.2); // keeps the same safety margin ratio as before
+  const QUIET = Math.round(QR_SIZE * 0.2);
   const out = document.createElement('canvas');
   out.width = source.width + QUIET * 2;
   out.height = source.height + QUIET * 2;
